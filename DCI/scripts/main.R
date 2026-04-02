@@ -517,3 +517,46 @@ ggplot() +
   ggspatial::annotation_north_arrow(location = "br")+
   labs(caption = "Prostupnost bariér")
 
+# Snap barriers to river within a max distance of 10 meters
+dams_snapped <- snap_to_river(dams_to_points, shape_river_simple %>% st_sf(), max_dist = 10)
+
+# Keep only those barriers that are within the simplified river shape
+dams_snapped_reduced <- dams_snapped[st_contains(shape_river_simple %>% st_sf(), dams_snapped, prepared = FALSE)[[1]],]
+
+# Ensure barriers within a certain distance (e.g., 10 meters) are clustered
+# Use `st_is_within_distance` to identify clusters within 10 meters
+clusters <- st_is_within_distance(dams_snapped_reduced, dist = 100)
+
+# Create cluster groups based on proximity
+dams_snapped_reduced <- dams_snapped_reduced %>%
+  mutate(cluster = sapply(clusters, function(x) paste(sort(x), collapse = "_"))) %>%
+  group_by(cluster) %>%
+  slice(1) %>%  # Select the first barrier within each cluster
+  ungroup()
+
+# Assign new IDs to the clustered barriers
+dams_snapped_reduced <- dams_snapped_reduced %>%
+  mutate(id_dam = as.character(1:nrow(.)))
+
+# Now join the clustered barriers back to the river shape
+# Keep only the barrier with the highest UPLAND_SKM value within each reach (id)
+dams_snapped_reduced_joined <- dams_snapped_reduced %>%
+  st_join(shape_river, join = st_is_within_distance, dist = 100) %>%  # Associate barriers with the river
+  group_by(id) %>%  # Group by river reaches
+  slice(which.max(UPLAND_SKM)) %>%  # Keep the barrier with the largest UPLAND_SKM
+  ungroup()
+
+
+headwaters_checking <- headwaters_dam(dams_snapped_reduced_joined, shape_river_simple)
+
+head(headwaters_checking$flag_headwater)
+
+ggplot() +
+  coord_fixed() +
+  ggspatial::layer_spatial(shape_river_simple, color = "gray70")+
+  ggspatial::layer_spatial(dams_snapped_reduced, shape = 1) +
+  theme_minimal() +
+  theme(legend.position = "bottom")+
+  ggspatial::annotation_north_arrow(location = "br")+
+  ggspatial::annotation_scale(location = "bl", style = "ticks") +
+  labs(caption = "Prázdné body jsou bariéry")
