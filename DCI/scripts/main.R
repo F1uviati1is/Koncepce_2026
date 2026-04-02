@@ -665,3 +665,14 @@ library(sf)
 
 # Výběr outletu s minimální elevací
 outlet <- river_net_simplified$NodeID[which(river_net_simplified$alt == min_elevation)]
+
+# Výsledek
+outlet
+
+river_graph <- create_network(network_links, river_net_simplified, outlet)
+
+V(river_graph)$length <- V(river_graph)$length / 1000
+hist(V(river_graph)$length)
+
+# river graph editing and adding HSI
+V(river_graph)$name <- as.character(V(river_graph)$name)
