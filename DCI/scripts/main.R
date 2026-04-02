@@ -676,3 +676,156 @@ hist(V(river_graph)$length)
 
 # river graph editing and adding HSI
 V(river_graph)$name <- as.character(V(river_graph)$name)
+
+library(sf)
+library(dplyr)
+library(igraph)
+library(readr)
+
+# Initialize list where to store all the index calculation outputs
+index <- list()
+lab_index <- list()
+letter_index <- list()
+
+# Ensure the 'name' attribute of the vertices is of type character
+V(river_graph)$name <- as.character(V(river_graph)$name)
+
+library(sf)
+library(dplyr)
+library(igraph)
+library(readr)
+
+# Initialize list where to store all the index calculation outputs
+index <- list()
+lab_index <- list()
+letter_index <- list()
+
+# Ensure the 'name' attribute of the vertices is of type character
+V(river_graph)$name <- as.character(V(river_graph)$name)
+
+# 1: Symmetric Dendritic Connectivity Index (no biotic effects)
+lab_index[[1]] <- "Symmetric DCI"
+letter_index[[1]] <- "A"
+index[[1]] <- index_calculation(
+  graph = river_graph,
+  weight = "length",
+  B_ij_flag = FALSE,
+  index_type = "reach",
+  index_mode = "from"
+)
+
+# Summary table for index calculation
+index_summary <- data.frame(
+  index = unlist(lab_index),
+  min = t(sapply(index, sapply, min))[, 4],
+  mean = t(sapply(index, sapply, mean))[, 4],
+  max = t(sapply(index, sapply, max))[, 4]
+)
+
+print(index_summary)
+
+plot_list <- list()
+
+# Prepare barrier metadata
+barriers_metadata <- data.frame(
+  id_barrier = E(river_graph)$id_barrier[!is.na(E(river_graph)$id_barrier)],
+  pass_u_updated = 1,
+  pass_d_updated = 1
+)
+
+head(barriers_metadata)
+
+# Initialize list where to store all the d-index calculation outputs
+d_index <- list()
+lab_d_index <- list()
+letter_d_index <- list()
+
+# 1: Symmetric DCI
+lab_d_index[[1]] <- "Symmetric DCI"
+letter_d_index[[1]] <- "A"
+d_index[[1]] <- d_index_calculation(
+  graph = river_graph,
+  barriers_metadata = barriers_metadata,
+  B_ij_flag = FALSE,
+  parallel = FALSE
+)
+
+# Ensure consistent types in d_index outputs
+for (i in seq_along(d_index)) {
+  d_index[[i]] <- d_index[[i]] %>%
+    mutate(
+      id_barrier = as.integer(id_barrier),
+      num = as.numeric(num),
+      den = as.numeric(den),
+      index = as.numeric(index),
+      index_bl = as.numeric(index_bl),
+      d_index = as.numeric(d_index)
+    )
+}
+
+# Summary table for d_index calculation
+d_index_min <- sapply(d_index, function(x) min(x$d_index, na.rm = TRUE))
+d_index_mean <- sapply(d_index, function(x) mean(x$d_index, na.rm = TRUE))
+d_index_max <- sapply(d_index, function(x) max(x$d_index, na.rm = TRUE))
+
+d_index_summary <- data.frame(
+  `Baseline CCI` = unlist(lab_d_index),
+  min = d_index_min,
+  mean = d_index_mean,
+  max = d_index_max
+)
+
+print(d_index_summary)
+
+# Ensure join keys are numeric/integer
+network_links$id_links <- as.integer(network_links$id_links)
+network_links$id_barrier <- as.integer(network_links$id_barrier)
+
+# Combine all d_index data frames into one, including source identifier
+combined_d_index <- bind_rows(d_index, .id = "source")
+
+# Join network links with d_index results
+network_links_merged <- network_links %>%
+  left_join(combined_d_index, by = "id_barrier")
+
+# Extract coordinates from geometry
+coords <- sf::st_coordinates(network_links_merged$geometry)
+
+network_links_merged <- network_links_merged %>%
+  mutate(
+    lon = coords[, 1],
+    lat = coords[, 2]
+  )
+
+# Select relevant columns for export
+export_data <- network_links_merged %>%
+  dplyr::select(
+    id_barrier,
+    id_links,
+    type,
+    pass_u,
+    pass_d,
+    num,
+    den,
+    index,
+    index_bl,
+    d_index,
+    source,
+    lon,
+    lat
+  ) %>%
+  mutate(
+    num = as.numeric(num),
+    den = as.numeric(den),
+    index = as.numeric(index),
+    index_bl = as.numeric(index_bl),
+    d_index = as.numeric(d_index)
+  )
+
+# Define relative output path - consistent with input style
+file_path <- "DCI/output/koncepce_Odra_DCI_nova_data_parovan.csv"
+
+# Export CSV
+readr::write_csv(export_data, file_path)
+
+cat("Data with all barriers and indices has been successfully exported to:", file_path, "\n")
