@@ -28,7 +28,7 @@ s vrstvou bariér pro snadnější identifikaci konkrétní bariéry
 Celý skript výpočtu DCI a prioritizace bariér pro konkrétní povodí (zde povodí Labe) od načtení skriptu pro podpůrné funkce (Baldan https://damianobaldan.github.io/riverconn_tutorial/#appendix-b-source-code-of-the-custom-functions-used-to-support-the-processing-the-data), přes načtení dat, vytvoření rivergraphu, výpočet indexu a prioritizaci bariér s následným uložením ve formě csv (zde změna oproti původnímu skriptu autorů). Dokument uložený jako "main.R".
 
 ### Prilohy_vrstvy
-Data, která byla použita pro tvorbu příloh Koncepce, obsahuje statické GIS vrstvy a metadata (pozn. vzhledem k průběžnému vývoji webu (https://tokyamokrady.aopk.gov.cz/), jsou pravděpodobně k dispozici již aktuálnější datové podkaldy).
+Data, která byla použita pro tvorbu příloh Koncepce, obsahuje statické GIS vrstvy a metadata (pozn. vzhledem k průběžnému vývoji webu (https://tokyamokrady.aopk.gov.cz/), jsou pravděpodobně k dispozici již aktuálnější datové podklady).
 
 ### Typologie_OOV
 Myšlenka, která se do Koncepce zatím nepropsala, nicméně datově byla částečně zpracována, je průnik metodické části Koncepce s metodikou pro hodnocení útvarů povrchových vod, které vyžaduje rámcová směrnice o vodách. Tuto metodiku a její přípravu zpracoval M. Janáč v roce 2019.
